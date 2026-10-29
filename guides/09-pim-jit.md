@@ -1,117 +1,94 @@
-# Privileged Identity Management (PIM) and Just-in-Time Access
+# Privileged Identity Management (PIM) and Just-in-Time Access — Practical Guide
 
-PIM is Microsoft’s Just-in-Time privileged access system for Microsoft Entra ID roles, Azure RBAC roles, and PIM for Groups. It is one of the highest-signal topics in IAM interviews and a daily operational concern in hybrid environments (synced groups often become the source of eligibility).
+PIM lives in the **Microsoft Entra admin center** (not in Intune).  
+Path: **Identity governance → Privileged Identity Management**.
 
-## When to use PIM / JIT
+You need a Microsoft Entra ID P2, Microsoft Entra ID Governance, or Microsoft Entra Suite license to use Eligible assignments. Without it you can only make Active assignments.
 
-**Use PIM (eligible assignments) when:**
-- The privilege is needed occasionally or for a specific task (Global Administrator, Privileged Role Administrator, User Administrator, Application Administrator, etc.).
-- You want an audit trail of *why* and *when* someone elevated.
-- You need to enforce MFA, justification, ticket number, or approval at elevation time.
-- You are reducing standing (permanent) privileged access to meet least-privilege or compliance requirements.
-- A synced on-premises group is used for privileged access — convert membership to eligible via PIM for Groups.
+## Core concepts (simple)
 
-**Use permanent (active) assignments only for:**
-- Break-glass / emergency accounts (highly controlled, monitored, MFA-protected, not used daily).
-- Service principals or managed identities that cannot perform interactive activation.
-- Very short-lived scenarios where the operational overhead of activation is not justified (rare; document the exception).
+| Concept | What it means | What the user experiences |
+|---------|---------------|---------------------------|
+| **Eligible** | The user is allowed to activate the role when they need it. They do **not** have the privileges until they activate. | They see the role under “My roles” and must click Activate. |
+| **Active / Permanent** | The role is always on (standing privilege). No activation required. | The user already has the role. They can use it immediately. |
+| **Activation** | The short process (usually MFA + reason, sometimes approval) that temporarily turns Eligible into Active. | User clicks Activate, completes checks, role becomes available for a limited time, then expires. |
+| **PIM for Groups** | Just-in-time membership (or ownership) of a security group. Very useful with hybrid-synced groups that grant access. | User activates membership in the group; group membership appears only while activated. |
+
+## When to use each type
+
+**Use Eligible (recommended default) when:**
+- The person only needs the privilege sometimes (e.g., helpdesk lead who occasionally needs User Administrator).
+- You want an audit trail of when and why someone elevated.
+- You want to force MFA, a ticket number, or approval at elevation time.
+- You are reducing standing (always-on) privileged accounts.
+
+**Use Active / Permanent only for:**
+- Break-glass / emergency accounts (highly controlled, monitored, not used daily).
+- Service principals or managed identities that cannot click “Activate”.
 
 **Do not use PIM for:**
-- Ordinary user or group membership that is not privileged.
-- Scenarios where the user must have the role continuously without any activation step (true always-on operational need).
-- Replacing Conditional Access or MFA for normal sign-in (PIM is an additional control on elevation, not a replacement).
+- Ordinary non-privileged group membership.
+- Everyday sign-in MFA or Conditional Access (those are separate).
 
-## Core concepts (interview must-know)
+## Scenario 1 — Make a user Eligible for a role (most common)
 
-| Term | Meaning |
-|------|---------|
-| **Eligible** | User can activate the role when needed (Just-in-Time) |
-| **Active / Permanent** | Role is always on (standing privilege) |
-| **Activation** | User requests the role for a limited time |
-| **PIM for Groups** | Just-in-time membership or ownership of a security group (very common with hybrid-synced groups) |
-| **Justification / Approval / MFA** | Controls enforced at activation time |
-| **Role settings** | Per-role configuration (duration, MFA, approval, notification) |
+**Goal:** Jane Doe should be able to become Global Administrator only when she needs it.
 
-**Best practice baseline:** Prefer eligible. Keep permanent only for documented break-glass. Require MFA + justification. Keep activation duration short (1–4 hours for high-privilege roles).
+1. Sign in to the Microsoft Entra admin center as a Privileged Role Administrator or Global Administrator.  
+   https://entra.microsoft.com
+2. Go to **Identity governance → Privileged Identity Management → Microsoft Entra roles**.
+3. Select **Roles**.
+4. Click **Add assignments**.
+5. Select the role (e.g., Global Administrator).
+6. Select the user (Jane Doe).
+7. On the next screen choose **Assignment type = Eligible**.
+8. Leave it permanent or set an end date.
+9. Click **Assign**.
 
-## Realistic tenant sample — Eligible assignments
+Jane is now Eligible. She does **not** have Global Administrator rights until she activates.
 
-```
-Role                          Principal                  Assignment Type   End Date
------------------------------ -------------------------- ----------------- ----------
-Global Administrator          jane.doe@contoso.com       Eligible          Permanent
-Privileged Role Administrator alex.smith@contoso.com     Eligible          Permanent
-User Administrator            helpdesk-tier2@contoso.com Eligible          2026-12-31
-Global Administrator          breakglass01@contoso.com   Active            Permanent   ← break-glass only
-```
+## Scenario 2 — User activates the role when needed
 
-## Realistic tenant sample — Successful activation audit entry
+1. Jane signs in to the Entra admin center.
+2. Goes to **Identity governance → Privileged Identity Management → My roles → Microsoft Entra roles**.
+3. Finds Global Administrator and clicks **Activate**.
+4. Completes MFA if required.
+5. Enters a reason (e.g., “INC-48291 – mailbox recovery”).
+6. Clicks **Activate**.
 
-```
-Date (UTC)     : 2026-10-29T12:32:18Z
-Activity       : RoleAssignmentActivated
-Category       : RoleManagement
-Actor          : jane.doe@contoso.com
-Target Role    : Global Administrator
-Assignment Type: Eligible
-Duration       : 1 hour
-Justification  : INC-48291 - Emergency mailbox recovery for VIP user
-Status         : Success
-IP Address     : 203.0.113.45
-Client App     : Microsoft Azure Active Directory
-Conditional Access: Satisfied (MFA)
-```
+The role becomes Active for the configured duration (often 1–8 hours), then automatically returns to Eligible.
 
-## Realistic tenant sample — Failed activation (MFA loop)
+## Scenario 3 — PIM for Groups (hybrid-friendly)
 
-```
-Date (UTC)     : 2026-10-29T09:14:02Z
-Activity       : RoleAssignmentActivationRequested
-Actor          : alex.smith@contoso.com
-Target Role    : Privileged Role Administrator
-Status         : Failed
-Reason         : Conditional Access policy “Require MFA for All Cloud Apps” 
-                 re-challenged during PIM activation flow
-Sign-in log    : Application = Microsoft Azure Active Directory / PIM
-                 CA result = Failure (policy applied)
-```
+**Goal:** A synced on-premises group should not have standing privileged membership. Users activate membership only when needed.
 
-## Common activation failure modes
+1. Create or choose a cloud security group (note: groups synchronized from on-premises cannot be managed directly in PIM for Groups — you usually create a cloud group and nest or manage membership carefully).
+2. Go to **Identity governance → Privileged Identity Management → Groups**.
+3. Select **Discover groups** → choose the group → **Manage groups**.
+4. Open the group → **Assignments** → **Add assignments**.
+5. Choose role = **Member**.
+6. Select the users.
+7. Set **Assignment type = Eligible**.
+8. Click **Assign**.
 
-| Symptom | Likely cause | What to check |
-|---------|--------------|---------------|
-| MFA loop during activation | Conditional Access policy targeting “All cloud apps” or Azure Management | Sign-in logs → Conditional Access tab for the PIM / Azure AD application |
-| Activation stuck in Pending | Approval required and approver not notified, or self-approval misconfigured | Role settings → Approval; check notifications |
-| Role activates but portal still shows no access | Propagation delay (5–15 min) or browser/app caching | Wait, sign out/in, check audit logs for RoleAssignmentActivated |
-| Group membership via PIM for Groups not working | User activated membership but downstream app/role has its own caching | Confirm membership in Entra, then re-auth to the resource |
-| User sees “not eligible” | Assignment expired, wrong scope, or only permanent assignment exists | PIM → Assignments (Eligible vs Active) |
-| Hard-match or sync issue blocking group-based eligibility | On-premises group not synced or membership not updated | Entra Connect health + group membership in cloud |
+Users can now activate membership the same way they activate a role (My roles → Groups → Activate).
 
-## Quick diagnostic steps
+## Role settings you should configure
 
-1. Confirm the user has an **Eligible** assignment (not only Active).
-2. Check role settings: MFA required? Justification required? Approval required? Max duration?
-3. Review sign-in logs around the activation time for Conditional Access blocks.
-4. Look in Audit logs for `RoleAssignmentActivated` / `RoleAssignmentActivationRequested`.
-5. For PIM for Groups: verify the group is enabled for PIM and the user successfully activated membership.
-6. In hybrid environments: confirm any on-premises group used for eligibility has synced.
+Inside the role (or group) → **Settings** → Edit:
 
-## Interview-focused questions & strong answers
+- Require MFA on activation
+- Require justification
+- Optionally require approval
+- Set maximum activation duration (1–4 hours for high-privilege roles)
 
-**“When would you use PIM versus a permanent role assignment?”**  
-“I default to eligible (PIM) for any privileged role that is not a true always-on break-glass need. Permanent assignments are reserved for emergency accounts that are tightly monitored. This reduces standing privilege and gives an auditable activation trail.”
+## Common mistakes
 
-**“A user says their PIM activation is stuck in a MFA loop. What do you do?”**  
-“I open the sign-in logs for that user at the time of the attempt, filter to the PIM / Microsoft Azure Active Directory application, and inspect the Conditional Access tab. Almost always a policy targeting All cloud apps is re-challenging. I then either exclude the PIM activation flow appropriately or adjust the policy.”
+- Assigning Active when you meant Eligible → the user has standing privilege.
+- Forgetting to remove the old permanent role assignment after making the user Eligible.
+- Expecting PIM to appear in the Intune admin center — it is only in the Entra admin center.
+- Trying to enable PIM for Groups on a group that is synchronized from on-premises (not supported).
 
-**“How does PIM interact with hybrid identity?”**  
-“Synced on-premises groups are frequently used as the source of eligibility. I confirm the group has synced, membership is current, and then enable PIM for Groups so membership itself becomes just-in-time rather than standing. Activation still follows the same MFA / justification / approval model.”
+## Interview tip
 
-**“What would you monitor for PIM?”**  
-“RoleAssignmentActivated, RoleAssignmentCreated with permanent type, activations outside business hours, multiple failed activation attempts, and any permanent assignment to a high-privilege role that is not a documented break-glass account.”
-
-## One-sentence answers interviewers like
-
-- “I treat PIM activation failures the same way I treat Conditional Access issues — sign-in logs first, then role settings, then propagation.”
-- “Eligible is the default; permanent is the exception and must be justified.”
-- “In hybrid environments I always verify that the on-premises group feeding eligibility has actually synced before troubleshooting activation.”
+“I make users Eligible by default, configure MFA + justification on activation, and only keep permanent Active assignments for documented break-glass accounts. Activation happens in Identity governance → Privileged Identity Management → My roles.”
