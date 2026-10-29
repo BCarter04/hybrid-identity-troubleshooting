@@ -1,0 +1,15 @@
+# Sample — PIM Activation Audit Entry
+
+```
+Date (UTC)     : 2026-10-29T12:32:18Z
+Activity       : RoleAssignmentActivated
+Category       : RoleManagement
+Actor          : jane.doe@contoso.com
+Target Role    : Global Administrator
+Assignment Type: Eligible
+Duration       : 1 hour
+Justification  : INC-48291 - Emergency mailbox recovery for VIP user
+Status         : Success
+IP Address     : 203.0.113.45
+Client App     : Microsoft Azure Active Directory
+```

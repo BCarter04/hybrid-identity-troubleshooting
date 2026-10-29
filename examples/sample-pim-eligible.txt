@@ -1,0 +1,11 @@
+# Sample — PIM Eligible Assignments (realistic tenant)
+
+```
+Role                          Principal                  Assignment Type   Scope        End Date
+----------------------------- -------------------------- ----------------- ------------ ----------
+Global Administrator          jane.doe@contoso.com       Eligible          /            Permanent
+Privileged Role Administrator alex.smith@contoso.com     Eligible          /            Permanent
+User Administrator            helpdesk-tier2@contoso.com Eligible          /            2026-12-31
+Exchange Administrator        ops-team@contoso.com       Eligible          /            Permanent
+Global Administrator          breakglass01@contoso.com   Active            /            Permanent
+```

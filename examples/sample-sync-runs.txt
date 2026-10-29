@@ -1,0 +1,10 @@
+# Sample — Recent Sync Runs (excerpt)
+
+```
+ConnectorName                  RunProfileName   StartDate            EndDate              Result
+------------------------------ ---------------- -------------------- -------------------- -------
+contoso.com - AAD              Export           29/10/2026 12:46:10  29/10/2026 12:46:45  success
+contoso.com - AAD              Import           29/10/2026 12:45:50  29/10/2026 12:46:05  success
+contoso.local                  Export           29/10/2026 12:45:20  29/10/2026 12:45:40  success
+contoso.local                  Import           29/10/2026 12:44:55  29/10/2026 12:45:15  success
+```

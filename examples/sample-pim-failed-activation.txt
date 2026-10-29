@@ -1,0 +1,14 @@
+# Sample — Failed PIM Activation (MFA loop)
+
+```
+Date (UTC)     : 2026-10-29T09:14:02Z
+Activity       : RoleAssignmentActivationRequested
+Actor          : alex.smith@contoso.com
+Target Role    : Privileged Role Administrator
+Status         : Failed
+Reason         : Conditional Access policy “Require MFA for All Cloud Apps”
+                 re-challenged during the PIM activation flow
+Sign-in Application : Microsoft Azure Active Directory
+Conditional Access  : Failure (policy applied)
+Recommendation      : Review CA policy targeting All cloud apps / Azure Management
+```
